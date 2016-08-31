@@ -124,6 +124,7 @@ sb_arg_t general_args[] =
 {
   {"num-threads", "number of threads to use", SB_ARG_TYPE_INT, "1"},
   {"max-requests", "limit for total number of requests", SB_ARG_TYPE_INT, "10000"},
+  {"usleep-interval", "usleep after one test, to simulate jobs process.", SB_ARG_TYPE_INT, "0"},
   {"max-time", "limit for total execution time in seconds", SB_ARG_TYPE_INT, "0"},
   {"forced-shutdown", "amount of time to wait after --max-time before forcing shutdown",
    SB_ARG_TYPE_STRING, "off"},
@@ -563,6 +564,11 @@ static void *worker_thread(void *arg)
       break;
     }
 
+    if (sb_globals.usleep_interval != 0)
+    {
+        usleep(sb_globals.usleep_interval);
+    }
+
   } while ((request.type != SB_REQ_TYPE_NULL) && (!sb_globals.error) );
 
   if (test->ops.thread_done != NULL)
@@ -882,6 +888,9 @@ static int run_test(sb_test_t *test)
       log_errno(LOG_FATAL, "pthread_create() for thread #%d failed.", i);
       return 1;
     }
+    if (i%100 == 99) {
+        usleep(100000);
+    }
   }
 
 #ifdef HAVE_ALARM
@@ -1122,6 +1131,7 @@ static int init(void)
 
   sb_globals.tx_rate = sb_get_value_int("tx-rate");
   sb_globals.report_interval = sb_get_value_int("report-interval");
+  sb_globals.usleep_interval = sb_get_value_int("usleep-interval");
 
   sb_globals.n_checkpoints = 0;
   checkpoints_list = sb_get_value_list("report-checkpoints");
