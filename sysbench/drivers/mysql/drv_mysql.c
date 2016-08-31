@@ -82,6 +82,7 @@ static sb_arg_t mysql_drv_args[] =
    SB_ARG_TYPE_LIST, "1213,1020,1205"},
   {"mysql-dry-run", "Dry run, pretent that all MySQL client API calls are successful without executing them",
    SB_ARG_TYPE_FLAG, "off"},
+  {"mysql-charset", "MySQL charset", SB_ARG_TYPE_STRING, "utf8"},
 
   {NULL, NULL, SB_ARG_TYPE_NULL, NULL}
 };
@@ -94,6 +95,7 @@ typedef struct
   char               *user;
   char               *password;
   char               *db;
+  char               *charset;
   unsigned char      use_ssl;
   unsigned char      use_compression;
   unsigned char      debug;
@@ -249,6 +251,7 @@ int mysql_drv_init(void)
   args.user = sb_get_value_string("mysql-user");
   args.password = sb_get_value_string("mysql-password");
   args.db = sb_get_value_string("mysql-db");
+  args.charset = sb_get_value_string("mysql-charset");
   args.use_ssl = sb_get_value_flag("mysql-ssl");
   args.use_compression = sb_get_value_flag("mysql-compression");
   args.debug = sb_get_value_flag("mysql-debug");
@@ -306,6 +309,11 @@ static int mysql_drv_real_connect(db_mysql_conn_t *db_mysql_con)
 	{
 		mysql_options(con,MYSQL_OPT_COMPRESS,NULL);
 	}
+        
+        if (args.charset)
+        {
+		mysql_options(con, MYSQL_SET_CHARSET_NAME, args.charset);
+        }
 
   DEBUG("mysql_real_connect(%p, \"%s\", \"%s\", \"%s\", \"%s\", %u, \"%s\", %s)",
         con,
