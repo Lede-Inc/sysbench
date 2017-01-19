@@ -10,6 +10,11 @@ function create_insert(table_id)
    local i
    local j
    local query
+   local shard = 1
+   local shard_commet = ""
+   if shard == 1 then
+     shard_commet = "/*# group=all */"
+   end
 
    if (oltp_secondary) then
      index_name = "KEY xid"
@@ -22,7 +27,7 @@ function create_insert(table_id)
    print("Creating table 'sbtest" .. i .. "'...")
    if ((db_driver == "mysql") or (db_driver == "attachsql")) then
       query = [[
-CREATE TABLE sbtest]] .. i .. [[ (
+CREATE]] .. shard_commet .. [[ TABLE sbtest]] .. i .. [[ (
 id INTEGER UNSIGNED NOT NULL ]] ..
 ((oltp_auto_inc and "AUTO_INCREMENT") or "") .. [[,
 k INTEGER UNSIGNED DEFAULT '0' NOT NULL,
@@ -61,11 +66,21 @@ pad CHAR(60) DEFAULT '' NOT NULL,
 
    print("Inserting " .. oltp_table_size .. " records into 'sbtest" .. i .. "'")
 
+  local db_bulk_insert_next = db_bulk_insert_next
+  local db_bulk_insert_init = db_bulk_insert_init
+  local db_bulk_insert_done = db_bulk_insert_done
+  local sb_rand = sb_rand
+  local sb_rand_str = sb_rand_str
+  local oltp_auto_inc = oltp_auto_inc
+  local oltp_table_size = oltp_table_size
+
+  if shard ~= 1 then
    if (oltp_auto_inc) then
       db_bulk_insert_init("INSERT INTO sbtest" .. i .. "(k, c, pad) VALUES")
    else
       db_bulk_insert_init("INSERT INTO sbtest" .. i .. "(id, k, c, pad) VALUES")
    end
+  end
 
    local c_val
    local pad_val
@@ -78,17 +93,30 @@ pad CHAR(60) DEFAULT '' NOT NULL,
    pad_val = sb_rand_str([[
 ###########-###########-###########-###########-###########]])
 
+    if shard ~= 1 then
       if (oltp_auto_inc) then
 	 db_bulk_insert_next("(" .. sb_rand(1, oltp_table_size) .. ", '".. c_val .."', '" .. pad_val .. "')")
       else
 	 db_bulk_insert_next("("..j.."," .. sb_rand(1, oltp_table_size) .. ",'".. c_val .."', '" .. pad_val .. "'  )")
       end
+    else --shard == 1
+      if (oltp_auto_inc) then
+         db_bulk_insert_init("INSERT INTO sbtest" .. i .. "(k, c, pad) VALUES")
+         db_bulk_insert_next("(" .. sb_rand(1, oltp_table_size) .. ", '".. c_val .."', '" .. pad_val .. "')")
+      else
+         db_bulk_insert_init("INSERT INTO sbtest" .. i .. "(id, k, c, pad) VALUES")
+         db_bulk_insert_next("("..j.."," .. sb_rand(1, oltp_table_size) .. ",'".. c_val .."', '" .. pad_val .. "'  )")
+      end
+      db_bulk_insert_done()
+    end
    end
 
+  if shard ~= 1 then
    db_bulk_insert_done()
+  end
 
    print("Creating secondary indexes on 'sbtest" .. i .. "'...")
-   db_query("CREATE INDEX k_" .. i .. " on sbtest" .. i .. "(k)")
+   db_query("CREATE " .. shard_commet .. " INDEX k_" .. i .. " on sbtest" .. i .. "(k)")
 
 end
 
@@ -117,7 +145,7 @@ function cleanup()
 
    for i = 1,oltp_tables_count do
    print("Dropping table 'sbtest" .. i .. "'...")
-   db_query("DROP TABLE sbtest".. i )
+   db_query("DROP /*# group=all */ TABLE sbtest".. i )
    end
 end
 
