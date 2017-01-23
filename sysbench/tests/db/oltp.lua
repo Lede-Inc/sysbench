@@ -48,22 +48,22 @@ function event(thread_id)
 
    for i=1, oltp_simple_ranges do
       range_start = sb_rand(1, oltp_table_size)
-      rs = db_query("SELECT c FROM ".. table_name .." WHERE id BETWEEN " .. range_start .. " AND " .. range_start .. "+" .. oltp_range_size - 1)
+      rs = db_query("SELECT c FROM ".. table_name .." WHERE id BETWEEN " .. range_start .. " AND " .. range_start + oltp_range_size - 1)
    end
   
    for i=1, oltp_sum_ranges do
       range_start = sb_rand(1, oltp_table_size)
-      rs = db_query("SELECT SUM(K) FROM ".. table_name .." WHERE id BETWEEN " .. range_start .. " AND " .. range_start .. "+" .. oltp_range_size - 1)
+      rs = db_query("SELECT SUM(K) FROM ".. table_name .." WHERE id BETWEEN " .. range_start .. " AND " .. range_start + oltp_range_size - 1)
    end
    
    for i=1, oltp_order_ranges do
       range_start = sb_rand(1, oltp_table_size)
-      rs = db_query("SELECT c FROM ".. table_name .." WHERE id BETWEEN " .. range_start .. " AND " .. range_start .. "+" .. oltp_range_size - 1 .. " ORDER BY c")
+      rs = db_query("SELECT c FROM ".. table_name .." WHERE id BETWEEN " .. range_start .. " AND " .. range_start + oltp_range_size - 1 .. " ORDER BY c")
    end
 
    for i=1, oltp_distinct_ranges do
       range_start = sb_rand(1, oltp_table_size)
-      rs = db_query("SELECT DISTINCT c FROM ".. table_name .." WHERE id BETWEEN " .. range_start .. " AND " .. range_start .. "+" .. oltp_range_size - 1 .. " ORDER BY c")
+      rs = db_query("SELECT DISTINCT c FROM ".. table_name .." WHERE id BETWEEN " .. range_start .. " AND " .. range_start + oltp_range_size - 1 .. " ORDER BY c")
    end
 
    end
